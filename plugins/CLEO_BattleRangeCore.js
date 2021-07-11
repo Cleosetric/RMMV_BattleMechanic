@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.2 An attemp to create my own mechanic battle system
+* @plugindesc v0.3 An attemp to create my own mechanic battle system
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -62,19 +62,20 @@
  *
  * Enemy Notetags:
  *
- *   <Set Position : x>
- *   <Min Distance : x>
- *   <Max Distance : x>
+ *   <SET POSITION: x>  = SET INITIAL POSITION
+ *   <MIN DISTANCE: x>  = SET MINIMAL DISTANCE ENEMY WILL STOP MOVE
+ *   <MAX DISTANCE: x>  = SET MAXIMAL DISTANCE ENEMY WILL RUN AWAY
+ *   <BRAVE>            = SET TRAIT THAT ENEMY WILL NOT MOVE AWAY EVEN IN LOW HEALTH
  *
  * Actor Notetags:
  *
- *   <Set Position : x>
- *   <Min Distance : x>
- *   <Max Distance : x>
+ *   <SET POSITION: x>
+ *   <MIN DISTANCE: x>
+ *   <MAX DISTANCE: x>
  * 
  *  Skill Notetags:
  * 
- *   <Set Range : x>
+ *   <SET RANGE: x>
  * 
  *
 */
@@ -129,10 +130,13 @@ DataManager.processCLEOEnemyNotetags1 = function(group) {
     obj.position = $.Param.enemy_pos;
     obj.min_distance = $.Param.enemy_min_distance;
     obj.max_distance = $.Param.enemy_max_distance;
-    
+    obj.brave = false;
+
     for (var i = 0; i < notedata.length; i++) {
       var line = notedata[i];
-      if (line.match(/<(?:SET POSITION):[ ](\d+)>/i)) {
+      if (line.match(/<(?:BRAVE)>/i)) {
+        obj.brave = true;
+      }else if (line.match(/<(?:SET POSITION):[ ](\d+)>/i)) {
         obj.position = parseInt(RegExp.$1);
       }else if (line.match(/<(?:MIN DISTANCE):[ ](\d+)>/i)) {
         obj.min_distance = parseInt(RegExp.$1);
@@ -205,14 +209,16 @@ BattleManager.processTurn = function() {
     
       action.prepare();
       if (action.isValid()) {
+       
         if(subject.isEnemy()){
+           //ENEMY
           var skill_range = $dataSkills[action._item._itemId].skill_range;
           var skillRange_isValid = subject.position() <= skill_range;
           var hp_tired = subject.hp <= subject.mhp * 0.3;
-
+          var brave = subject._brave;
           // console.log("current range : "+action_range + " | "+subject.position()+" " +rangeIsValid);
           if(skillRange_isValid){
-            if(hp_tired){
+            if(brave && hp_tired){
               if(Math.random() < 0.5){
                 this.startAction();
               }else{
@@ -225,11 +231,12 @@ BattleManager.processTurn = function() {
                 }
                
               }
+
             }else{
               this.startAction();
             }
           }else{
-            if(hp_tired){
+            if(brave && hp_tired){
               if(Math.random() < 0.5){
                 subject.moveCloser();
                 this._logWindow.displayOutsideRangeLog(subject);
@@ -332,6 +339,7 @@ var _Game_Enemy_initMembers = Game_Enemy.prototype.initMembers;
 Game_Enemy.prototype.initMembers = function() {
     _Game_Enemy_initMembers.call(this);
     this._position = 0;
+    this._brave = false;
     this._min_distance = 0;
     this._max_distance = 0;
 };
@@ -347,6 +355,7 @@ Game_Enemy.prototype.setupEnemyDistance = function() {
   this._position = this.enemy().position;
   this._min_distance = this.enemy().min_distance;
   this._max_distance = this.enemy().max_distance;
+  this._brave = this.enemy().brave;
 };
 
 Game_Enemy.prototype.position = function() {
@@ -438,4 +447,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.2;
+Imported.CLEO_BattleRangeCore = 0.3;
