@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.4 An attemp to create my own mechanic battle system
+* @plugindesc v0.4.1 An attemp to create my own mechanic battle system
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -187,16 +187,6 @@ DataManager.processCLEOSkillNotetags1 = function(group) {
 //=============================================================================
 // BattleManager
 //=============================================================================
-var _BattleManager_initMembers = BattleManager.initMembers;
-BattleManager.initMembers = function() {
-  _BattleManager_initMembers.call(this);
-  this._distances = [];
-};
-var _BattleManager_startTurn = BattleManager.startTurn;
-BattleManager.startTurn = function() {
-  _BattleManager_startTurn.call(this);
-  // this.initializeDistance(this._subject);
-};
 
 // var _BattleManager_processTurn = BattleManager.processTurn;
 BattleManager.processTurn = function() {
@@ -221,19 +211,21 @@ BattleManager.processTurn = function() {
               if(brave){
                 this.startAction();
               }else{
-                if(Math.random() < 0.5){
-                  this.startAction();
-                }else{
+                // if(Math.random() < 0.5){
+                //   this.startAction();
+                // }else{
                   if(subject.position() <= subject._max_distance){
                     subject.moveAway();
                     this._logWindow.displayMoveAway(subject);
                   }else{
-                    subject.forceAction(6,-1);
-                    this.forceAction(subject);
+                    subject._hidden = true;
+                    this._logWindow.displayRunAway(subject);
+                    // subject.forceAction(6,0);
+                    // this.forceAction(subject);
                     // subject.moveCloser();
                     // this._logWindow.displayMoveCloser(subject);
                   }
-                }
+                // }
               }
             }else{
               this.startAction();
@@ -246,19 +238,23 @@ BattleManager.processTurn = function() {
                 this._logWindow.displayOutsideRangeLog(subject);
                 this._logWindow.displayMoveCloser(subject);
               }else{
-                if(Math.random() < 0.5){
-                  subject.moveCloser();
-                  this._logWindow.displayOutsideRangeLog(subject);
-                  this._logWindow.displayMoveCloser(subject);
-                }else{
+                // if(Math.random() < 0.5){
+                //   subject.moveCloser();
+                //   this._logWindow.displayOutsideRangeLog(subject);
+                //   this._logWindow.displayMoveCloser(subject);
+                // }else{
                   if(subject.position() <= subject._max_distance){
                     subject.moveAway();
                     this._logWindow.displayMoveAway(subject);
                   }else{
-                    subject.forceAction(6,-1);
-                    this.forceAction(subject);
+                    subject._hidden = true;
+                    this._logWindow.displayRunAway(subject);
+                    // subject.forceAction(6,0);
+                    // this.forceAction(subject);
+                    // subject.moveCloser();
+                    // this._logWindow.displayMoveCloser(subject);
                   }
-                }  
+                // }  
               }
             }else{
               subject.moveCloser();
@@ -311,6 +307,15 @@ Window_BattleLog.prototype.displayMoveCloser = function(subject) {
 
 Window_BattleLog.prototype.displayMoveAway = function(subject) {
   var stateText = " Move Away";
+  if (stateText) {
+      this.push('addText', subject.name() + stateText);
+      this.push('wait');
+      this.push('clear');
+  }
+};
+
+Window_BattleLog.prototype.displayRunAway = function(subject) {
+  var stateText = " Run Away";
   if (stateText) {
       this.push('addText', subject.name() + stateText);
       this.push('wait');
