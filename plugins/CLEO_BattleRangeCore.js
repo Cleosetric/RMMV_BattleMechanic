@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.3 An attemp to create my own mechanic battle system
+* @plugindesc v0.4 An attemp to create my own mechanic battle system
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -69,13 +69,13 @@
  *
  * Actor Notetags:
  *
- *   <SET POSITION: x>
- *   <MIN DISTANCE: x>
- *   <MAX DISTANCE: x>
- * 
+ *   <SET POSITION: x>  = SET INITIAL POSITION
+ *   <MIN DISTANCE: x>  = SET MINIMAL DISTANCE ENEMY WILL STOP MOVE
+ *   <MAX DISTANCE: x>  = SET MAXIMAL DISTANCE ENEMY WILL RUN AWAY
+ *
  *  Skill Notetags:
  * 
- *   <SET RANGE: x>
+ *   <SET RANGE: x>     = SET SKILL RANGE
  * 
  *
 */
@@ -209,46 +209,56 @@ BattleManager.processTurn = function() {
     
       action.prepare();
       if (action.isValid()) {
-       
         if(subject.isEnemy()){
            //ENEMY
           var skill_range = $dataSkills[action._item._itemId].skill_range;
           var skillRange_isValid = subject.position() <= skill_range;
           var hp_tired = subject.hp <= subject.mhp * 0.3;
           var brave = subject._brave;
-          // console.log("current range : "+action_range + " | "+subject.position()+" " +rangeIsValid);
+
           if(skillRange_isValid){
-            if(brave && hp_tired){
-              if(Math.random() < 0.5){
+            if(hp_tired){
+              if(brave){
                 this.startAction();
               }else{
-                if(subject.position() <= subject._max_distance){
-                  subject.moveAway();
-                  this._logWindow.displayMoveAway(subject);
+                if(Math.random() < 0.5){
+                  this.startAction();
                 }else{
-                  subject.moveCloser();
-                  this._logWindow.displayMoveCloser(subject);
+                  if(subject.position() <= subject._max_distance){
+                    subject.moveAway();
+                    this._logWindow.displayMoveAway(subject);
+                  }else{
+                    subject.forceAction(6,-1);
+                    this.forceAction(subject);
+                    // subject.moveCloser();
+                    // this._logWindow.displayMoveCloser(subject);
+                  }
                 }
-               
               }
-
             }else{
               this.startAction();
             }
           }else{
-            if(brave && hp_tired){
-              if(Math.random() < 0.5){
+            if(hp_tired){
+
+              if(brave){
                 subject.moveCloser();
                 this._logWindow.displayOutsideRangeLog(subject);
                 this._logWindow.displayMoveCloser(subject);
               }else{
-                if(subject.position() <= subject._max_distance){
-                  subject.moveAway();
-                  this._logWindow.displayMoveAway(subject);
-                }else{
+                if(Math.random() < 0.5){
                   subject.moveCloser();
+                  this._logWindow.displayOutsideRangeLog(subject);
                   this._logWindow.displayMoveCloser(subject);
-                }
+                }else{
+                  if(subject.position() <= subject._max_distance){
+                    subject.moveAway();
+                    this._logWindow.displayMoveAway(subject);
+                  }else{
+                    subject.forceAction(6,-1);
+                    this.forceAction(subject);
+                  }
+                }  
               }
             }else{
               subject.moveCloser();
@@ -266,14 +276,12 @@ BattleManager.processTurn = function() {
             console.log(target.position());
             skillRange_isValid = target.position() <= skill_range;
           },this);
-          // console.log(targets +" | "+ skillRange_isValid);
           
           if(skillRange_isValid){
             this.startAction();
           }else{
             this._logWindow.displayOutsideRangeLog(subject);
           }
-          
         }
       }
       subject.removeCurrentAction();
@@ -319,6 +327,21 @@ Window_BattleLog.prototype.displayOutsideRangeLog = function(subject) {
       this.push('addText', subject.name()+" "+ skillName + stateText);
       this.push('wait');
       this.push('clear');
+  }
+};
+
+
+Window_SkillList.prototype.drawItem = function(index) {
+  var skill = this._data[index];
+  if (skill) {
+      var costWidth = this.costWidth();
+      var rect = this.itemRect(index);
+      rect.width -= this.textPadding();
+      this.changePaintOpacity(this.isEnabled(skill));
+      this.drawIcon(skill.iconIndex,  rect.x + 2,  rect.y + 2);
+      this.drawText(skill.name+" ["+skill.skill_range+"km]", rect.x + 40, rect.y, rect.width - costWidth);
+      this.drawSkillCost(skill, rect.x, rect.y, rect.width);
+      this.changePaintOpacity(1);
   }
 };
 
@@ -447,4 +470,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.3;
+Imported.CLEO_BattleRangeCore = 0.4;
