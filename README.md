@@ -5,7 +5,7 @@ a repository for me **(a noob scripter)** trying to make plugins from concept to
 a plugins to add range mechanic to enemy and actor
 
 **Feature list implemented**
-- Add Position and distance for Actor and Enemy
-- Add Skill Range based subject position
-- Add Escape Enemy when enemy move far away to certain distance
-- Add Brave Trait to Enemy, so enemy would'nt run away from battle
+- Add position and distance for Actor and Enemy
+- Add skill range based subject position
+- Add escape enemy when enemy move far away to certain distance
+- Add Brave Trait to Enemy, so enemy wouldn't run away from battle
