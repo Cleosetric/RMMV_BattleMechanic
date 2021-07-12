@@ -190,9 +190,19 @@ DataManager.processCLEOSkillNotetags1 = function(group) {
 
 // OVERWRITE processTurn method
 BattleManager.processTurn = function() {
+  // console.log(subject);
   var subject = this._subject;
+  // if(subject) {
+  //     subject.onAllActionsEnd();
+  //     this.refreshStatus();
+  //     this._logWindow.displayAutoAffectedStatus(subject);
+  //     this._logWindow.displayCurrentState(subject);
+  //     this._logWindow.displayRegeneration(subject);
+  //     this._subject = this.getNextSubject();
+  //     return;
+  // }
+  if(subject){
   var action = subject.currentAction();
-
   if (action) {
       action.prepare();
       if (action.isValid()) {
@@ -252,11 +262,27 @@ BattleManager.processTurn = function() {
       this._logWindow.displayRegeneration(subject);
       this._subject = this.getNextSubject();
   }
+  }
 };
 
 BattleManager.getDistance = function (target) {
   var distance = this._subject.position() - target.position();
   return Math.abs(distance);
+};
+
+BattleManager.performActionMove = function (subject) {
+  var targets = $gameTroop.aliveMembers();
+  var subjects = $gameParty.battleMembers();
+  targets.forEach(function(target) {
+    target.addPosition(-subject.moveSpeed());
+  },this);
+
+  // subjects.forEach(function(subject) {
+  //  subject.action().setGuard();
+  // },this);
+
+  // this.startAction();
+
 };
 
 BattleManager.processMoveAway = function (subject) {
@@ -274,6 +300,52 @@ BattleManager.processMoveCloser = function (subject) {
   this._logWindow.displayOutsideRangeLog(subject);
   this._logWindow.displayMoveCloser(subject);
 };
+
+//=============================================================================
+// Scene_Battle
+//=============================================================================
+Scene_Battle.prototype.createPartyCommandWindow = function() {
+  this._partyCommandWindow = new Window_PartyCommand();
+  this._partyCommandWindow.setHandler('fight',  this.commandFight.bind(this));
+  this._partyCommandWindow.setHandler('approach',  this.commandApproach.bind(this));
+  this._partyCommandWindow.setHandler('escape', this.commandEscape.bind(this));
+  this._partyCommandWindow.deselect();
+  this.addWindow(this._partyCommandWindow);
+};
+
+// var _SceneBattle_createActorCommandWindow = Scene_Battle.prototype.createActorCommandWindow;
+// Scene_Battle.prototype.createActorCommandWindow = function() {
+//   this._actorCommandWindow = new Window_ActorCommand();
+//   this._actorCommandWindow.setHandler('attack', this.commandAttack.bind(this));
+//   this._actorCommandWindow.setHandler('moveCloser', this.commandMoveCloser.bind(this));
+//   // this._actorCommandWindow.setHandler('moveAway', this.commandMoveAway.bind(this));
+//   this._actorCommandWindow.setHandler('skill',  this.commandSkill.bind(this));
+//   this._actorCommandWindow.setHandler('guard',  this.commandGuard.bind(this));
+//   this._actorCommandWindow.setHandler('item',   this.commandItem.bind(this));
+//   this._actorCommandWindow.setHandler('cancel', this.selectPreviousCommand.bind(this));
+//   this.addWindow(this._actorCommandWindow);
+// };
+
+Scene_Battle.prototype.commandApproach = function() {
+  var actor = $gameParty.leader();//BattleManager.actor();
+  // this._skillWindow.setActor(actor);
+  // this._skillWindow.setStypeId(this._actorCommandWindow.currentExt());
+  // var skill_id = 20;//getSignatureSkill(BattleManager.actor(), "Signature Skill");
+  // var skill = $dataSkills[skill_id];
+  // var action = BattleManager.inputtingAction();
+  // action.setSkill(skill.id);
+  // BattleManager.actor().setLastBattleSkill(skill);
+  BattleManager.performActionMove(actor);
+  BattleManager.endTurn();
+  // this.onSelectAction();
+};
+
+Scene_Battle.prototype.commandMoveAway = function() {
+  // console.log(BattleManager.inputtingAction());
+  BattleManager.inputtingAction().setMoveAway();
+  // this.selectNextCommand();
+};
+
 
 //=============================================================================
 // Window_Any*
@@ -332,6 +404,24 @@ Window_SkillList.prototype.drawItem = function(index) {
   }
 };
 
+var _Window_PartyCommand_makeCommandList = Window_PartyCommand.prototype.makeCommandList;
+Window_PartyCommand.prototype.makeCommandList = function() {
+  this.addCommand("Approach",  'approach');
+  _Window_PartyCommand_makeCommandList.call(this);
+};
+
+// var _Window_ActionCommand_makeCommandList = Window_ActorCommand.prototype.makeCommandList;
+// Window_ActorCommand.prototype.makeCommandList = function() {
+//   if (this._actor) {
+//     this.addMoveCloserCommand();
+//   }
+//   _Window_ActionCommand_makeCommandList.call(this);
+// };
+
+// Window_ActorCommand.prototype.addMoveCloserCommand = function() {
+//   this.addCommand("Afterburner", 'moveCloser', this._actor.disableMoveCloser());
+// };
+
 //=============================================================================
 // Game_Enemy
 //=============================================================================
@@ -361,6 +451,13 @@ Game_Enemy.prototype.setupEnemyDistance = function() {
 
 Game_Enemy.prototype.position = function() {
   return this._position;
+};
+
+Game_Enemy.prototype.addPosition = function(value) {
+  this._position += value;
+  if(this._position <= this._min_distance){
+    this._position = this._min_distance;
+  }
 };
 
 Game_Enemy.prototype.moveCloser = function(){
