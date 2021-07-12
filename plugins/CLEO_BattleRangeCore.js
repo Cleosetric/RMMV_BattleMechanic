@@ -261,15 +261,17 @@ BattleManager.getDistance = function (target) {
   return Math.abs(distance);
 };
 
-BattleManager.performActionMove = function (subject) {
-  var targets = $gameTroop.aliveMembers();
-  var subjects = $gameParty.battleMembers();
-  targets.forEach(function(target) {
-    target.addPosition(-subject.moveSpeed());
+BattleManager.performActionMove = function (leader) {
+  var troop = $gameTroop.aliveMembers();
+  var party = $gameParty.battleMembers();
+
+  troop.forEach(function(enemy) {
+    enemy.addPosition(-leader.moveSpeed());
   },this);
 
-  subjects.forEach(function(subject) {
-   subject.setActionState('waiting');
+  party.forEach(function(actor) {
+    if(actor.isAlive())
+      actor.setActionState('waiting');
   },this);
 
   this.startTurn();
@@ -304,8 +306,8 @@ Scene_Battle.prototype.createPartyCommandWindow = function() {
 };
 
 Scene_Battle.prototype.commandApproach = function() {
-  var actor = $gameParty.leader();
-  BattleManager.performActionMove(actor);
+  var leader = $gameParty.leader();
+  BattleManager.performActionMove(leader);
 };
 
 //=============================================================================
