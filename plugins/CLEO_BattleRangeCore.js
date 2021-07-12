@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.1 An attemp to create my own mechanic battle system
+* @plugindesc v0.4.2 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -62,19 +62,20 @@
  *
  * Enemy Notetags:
  *
- *   <Set Position : x>
- *   <Min Distance : x>
- *   <Max Distance : x>
+ *   <SET POSITION: x>  = SET INITIAL POSITION
+ *   <MIN DISTANCE: x>  = SET MINIMAL DISTANCE ENEMY WILL STOP MOVE
+ *   <MAX DISTANCE: x>  = SET MAXIMAL DISTANCE ENEMY WILL RUN AWAY
+ *   <BRAVE>            = SET TRAIT THAT ENEMY WILL NOT MOVE AWAY EVEN IN LOW HEALTH
  *
  * Actor Notetags:
  *
- *   <Set Position : x>
- *   <Min Distance : x>
- *   <Max Distance : x>
- * 
+ *   <SET POSITION: x>  = SET INITIAL POSITION
+ *   <MIN DISTANCE: x>  = SET MINIMAL DISTANCE ENEMY WILL STOP MOVE
+ *   <MAX DISTANCE: x>  = SET MAXIMAL DISTANCE ENEMY WILL RUN AWAY
+ *
  *  Skill Notetags:
  * 
- *   <Set Range : x>
+ *   <SET RANGE: x>     = SET SKILL RANGE
  * 
  *
 */
@@ -129,10 +130,13 @@ DataManager.processCLEOEnemyNotetags1 = function(group) {
     obj.position = $.Param.enemy_pos;
     obj.min_distance = $.Param.enemy_min_distance;
     obj.max_distance = $.Param.enemy_max_distance;
-    
+    obj.brave = false;
+
     for (var i = 0; i < notedata.length; i++) {
       var line = notedata[i];
-      if (line.match(/<(?:SET POSITION):[ ](\d+)>/i)) {
+      if (line.match(/<(?:BRAVE)>/i)) {
+        obj.brave = true;
+      }else if (line.match(/<(?:SET POSITION):[ ](\d+)>/i)) {
         obj.position = parseInt(RegExp.$1);
       }else if (line.match(/<(?:MIN DISTANCE):[ ](\d+)>/i)) {
         obj.min_distance = parseInt(RegExp.$1);
@@ -184,211 +188,189 @@ DataManager.processCLEOSkillNotetags1 = function(group) {
 // BattleManager
 //=============================================================================
 
-var _BattleManager_initMembers = BattleManager.initMembers;
-BattleManager.initMembers = function() {
-  _BattleManager_initMembers.call(this);
-  this._distances = [];
-  this._isRangeValid = false;
-};
+// OVERWRITE processTurn method
+BattleManager.processTurn = function() {
+  var subject = this._subject;
 
-var _BattleManager_startAction = BattleManager.startAction;
-BattleManager.startAction = function() {
-  _BattleManager_startAction.call(this);
-  this.setDistances(this._subject, this._targets);
-  this.setSkillDistances(this._action);
-};
+  if(subject){
+  var action = subject.currentAction();
+  if (action) {
+      action.prepare();
+      if (action.isValid()) {
+        if(subject.isEnemy()){
 
-BattleManager.updateAction = function() {
-  var isTired = this._subject.hp <= this._subject.mhp * 0.3;
-  if (this._isRangeValid && !isTired) {
-    var target = this._targets.shift();
-    if (target) {
-      console.log("invoke action");
-      this.invokeAction(this._subject, target);
-    } else {
-      this.endAction();
-    }
-  }else{
-    console.log("invoke movement");
-    this.invokeMovement(this._subject);
-    
+           //ENEMY
+          var skill_range = $dataSkills[action._item._itemId].skill_range;
+          var skillRange_isValid = subject.position() <= skill_range;
+          var hp_tired = subject.hp <= subject.mhp * 0.3;
+          var brave = subject._brave;
+
+          if(skillRange_isValid){
+            if(hp_tired){
+              if(brave){
+                this.startAction();
+              }else{
+                this.processMoveAway(subject);
+              }
+            }else{
+              this.startAction();
+            }
+          }else{
+            if(hp_tired){
+              if(brave){
+                this.processMoveCloser(subject);
+              }else{
+                this.processMoveAway(subject);
+              }
+            }else{
+              this.processMoveCloser(subject);
+            }
+          }
+        }else{
+
+          //ACTOR
+          var targets = action.makeTargets();
+          var skill_range = $dataSkills[action._item._itemId].skill_range;
+          var skillRange_isValid = false;
+
+          targets.forEach(function(target) {
+            skillRange_isValid = target.position() <= skill_range;
+          },this);
+          
+          if(skillRange_isValid){
+            this.startAction();
+          }else{
+            this._logWindow.displayOutsideRangeLog(subject);
+          }
+        }
+      }
+      subject.removeCurrentAction();
+  } else {
+      subject.onAllActionsEnd();
+      this.refreshStatus();
+      this._logWindow.displayAutoAffectedStatus(subject);
+      this._logWindow.displayCurrentState(subject);
+      this._logWindow.displayRegeneration(subject);
+      this._subject = this.getNextSubject();
+  }
   }
 };
 
-BattleManager.setDistances = function(subject,targets){
-  targets.forEach(function(target) {
-    if (target !== undefined) {
-      if(subject == null) return;
-      
-      // this._distances.push(Math.abs(subject.position() - target.position()));
-      if(subject.isActor()){
-        var distance = target.position() - subject.position();
-        if(distance >= subject._min_distance){
-          this._distances.push(distance);
-        }else{
-          this._distances.push(subject._min_distance);
-        }
-      }else{
-        var distance = subject.position() - target.position();
-        if(distance >= subject._min_distance){
-          this._distances.push(distance);
-        }else{
-          this._distances.push(subject._min_distance);
-        }
-      }
-    }
-  }, this);
-
-  console.log("------------------");
-  console.log("all distances: "+this._distances);
+BattleManager.getDistance = function (target) {
+  var distance = this._subject.position() - target.position();
+  return Math.abs(distance);
 };
 
-BattleManager.getSingleDistances = function(pos,targets) {
-  var all_distances = [];
-  targets.forEach(function(target) {
-    all_distances.push(Math.abs(target.position() - pos));
+BattleManager.performActionMove = function (leader) {
+  var troop = $gameTroop.aliveMembers();
+  var party = $gameParty.battleMembers();
+
+  troop.forEach(function(enemy) {
+    enemy.addPosition(-leader.moveSpeed());
   },this);
-  all_distances.sort((a,b)=> a-b);
-  var min_distance = all_distances[0];
-  console.log("min dis: "+min_distance);
-  return min_distance;
+
+  party.forEach(function(actor) {
+    if(actor.isAlive())
+      actor.setActionState('waiting');
+  },this);
+
+  this.startTurn();
 };
 
-BattleManager.setSkillDistances = function(action){
-  if(action._item._itemId < 1) return;
-  var skillDistance = $dataSkills[action._item._itemId].skill_range;
-  var skillName = $dataSkills[action._item._itemId].name;
-  console.log("skill distance : " + skillDistance);
-  console.log("skill scope one : "+action.isForOne() + " | all : "+ action.isForAll());
-
-  if(action.isForOne()){
-    console.log("subject distance : " + this._distances[0]);
-    if(skillDistance >= this._distances[0]){
-      this._isRangeValid = true;
-      console.log(skillName+" is in range");
-    }else{
-      this._isRangeValid = false;
-      console.log(skillName+" is outside range");
-    }
+BattleManager.processMoveAway = function (subject) {
+  if(subject.position() <= subject._max_distance){
+    subject.moveAway();
+    this._logWindow.displayMoveAway(subject);
   }else{
-    for (var index = 0; index < this._distances.length; index++) {
-      console.log("subject distance : " + this._distances[index]);
-
-      if(skillDistance >= this._distances[index]){
-        this._isRangeValid = true;
-        console.log(skillName+" area in range");
-      }else{
-        this._isRangeValid = false;
-        console.log(skillName+" area outside range");
-      }
-    }
-  }
-  
-  console.log("------------------");
+    subject._hidden = true;
+    this._logWindow.displayRunAway(subject);
+  }  
 };
 
-BattleManager.invokeMovement = function (subject) {
-  if(subject.isEnemy()){
-    var tired_hp = subject.mhp * 0.3;
-    console.log(subject.name() + " hp: "+subject.hp+" | mhp: "+tired_hp);
-
-    if(subject.hp <= tired_hp){
-      if(subject.position() >= subject._max_distance){
-        subject.moveCloser();
-      }else{
-        subject.moveAway();
-      }
-    }else{
-      if(subject.position() <= subject._min_distance){
-        subject.moveAway();
-      }else{
-        subject.moveCloser();
-      }
-     
-    }
-  }
-  this.endAction();
-};
-
-BattleManager.getDistance = function () {
-  return this._distances;
-};
-
-var _BattleManager_endAction = BattleManager.endAction;
-BattleManager.endAction = function() {
-  _BattleManager_endAction.call(this);
-  this._distances.length = 0;
+BattleManager.processMoveCloser = function (subject) {
+  subject.moveCloser();
+  this._logWindow.displayOutsideRangeLog(subject);
+  this._logWindow.displayMoveCloser(subject);
 };
 
 //=============================================================================
 // Scene_Battle
 //=============================================================================
-
-Scene_Battle.prototype.createActorCommandWindow = function() {
-  this._actorCommandWindow = new Window_ActorCommand();
-  this._actorCommandWindow.setHandler('attack', this.commandAttack.bind(this));
-  this._actorCommandWindow.setHandler('moveCloser', this.commandMoveCloser.bind(this));
-  this._actorCommandWindow.setHandler('moveAway', this.commandMoveAway.bind(this));
-  this._actorCommandWindow.setHandler('skill',  this.commandSkill.bind(this));
-  this._actorCommandWindow.setHandler('guard',  this.commandGuard.bind(this));
-  this._actorCommandWindow.setHandler('item',   this.commandItem.bind(this));
-  this._actorCommandWindow.setHandler('cancel', this.selectPreviousCommand.bind(this));
-  this.addWindow(this._actorCommandWindow);
+Scene_Battle.prototype.createPartyCommandWindow = function() {
+  this._partyCommandWindow = new Window_PartyCommand();
+  this._partyCommandWindow.setHandler('fight',  this.commandFight.bind(this));
+  this._partyCommandWindow.setHandler('approach',  this.commandApproach.bind(this));
+  this._partyCommandWindow.setHandler('escape', this.commandEscape.bind(this));
+  this._partyCommandWindow.deselect();
+  this.addWindow(this._partyCommandWindow);
 };
 
-Scene_Battle.prototype.commandMoveCloser = function() {
-  // console.log(BattleManager.inputtingAction());
-  BattleManager.inputtingAction().setMoveCloser();
-  this.selectNextCommand();
-};
-
-Scene_Battle.prototype.commandMoveAway = function() {
-  // console.log(BattleManager.inputtingAction());
-  BattleManager.inputtingAction().setMoveAway();
-  this.selectNextCommand();
+Scene_Battle.prototype.commandApproach = function() {
+  var leader = $gameParty.leader();
+  BattleManager.performActionMove(leader);
 };
 
 //=============================================================================
-// Game_Action
+// Window_Any*
 //=============================================================================
 
-Game_Action.prototype.setMoveCloser = function() {
-  var subject = this.subject();
-  console.log("------------------");
-  subject.moveCloser();
-  console.log(subject.name()+" pos : "+ subject.position()+"km");
-  // this.setSkill(this.subject().attackSkillId());
-};
-
-Game_Action.prototype.setMoveAway = function() {
-  var subject = this.subject();
-  console.log("------------------");
-  subject.moveAway();
-  console.log(subject.name()+" pos : "+ subject.position()+"km");
-  // this.setSkill(this.subject().attackSkillId());
-};
-
-//=============================================================================
-// Window_ActorCommand
-//=============================================================================
-
-Window_ActorCommand.prototype.makeCommandList = function() {
-  if (this._actor) {
-      this.addAttackCommand();
-      this.addMoveCloserCommand();
-      this.addMoveAwayCommand();
-      this.addSkillCommands();
-      this.addGuardCommand();
-      this.addItemCommand();
+Window_BattleLog.prototype.displayMoveCloser = function(subject) {
+  var stateText = " Move Closer";
+  if (stateText) {
+      this.push('addText', subject.name() + stateText);
+      this.push('wait');
+      this.push('clear');
   }
 };
 
-Window_ActorCommand.prototype.addMoveCloserCommand = function() {
-  this.addCommand("Move Closer", 'moveCloser', this._actor.disableMoveCloser());
+Window_BattleLog.prototype.displayMoveAway = function(subject) {
+  var stateText = " Move Away";
+  if (stateText) {
+      this.push('addText', subject.name() + stateText);
+      this.push('wait');
+      this.push('clear');
+  }
 };
 
-Window_ActorCommand.prototype.addMoveAwayCommand = function() {
-  this.addCommand("Move Away", 'moveAway', this._actor.disableMoveAway());
+Window_BattleLog.prototype.displayRunAway = function(subject) {
+  var stateText = " Run Away";
+  if (stateText) {
+      this.push('addText', subject.name() + stateText);
+      this.push('wait');
+      this.push('clear');
+  }
+};
+
+Window_BattleLog.prototype.displayOutsideRangeLog = function(subject) {
+  var stateText = " Outside Range";
+  var skillName = $dataSkills[subject.currentAction()._item._itemId].name;
+  var skillRange = $dataSkills[subject.currentAction()._item._itemId].skill_range;
+  // console.log(subject.name()+"'s "+skillName + " Range is "+skillRange+"km" );
+  if (stateText) {
+      this.push('addText', subject.name()+" "+ skillName + stateText);
+      this.push('wait');
+      this.push('clear');
+  }
+};
+
+Window_SkillList.prototype.drawItem = function(index) {
+  var skill = this._data[index];
+  if (skill) {
+      var costWidth = this.costWidth();
+      var rect = this.itemRect(index);
+      rect.width -= this.textPadding();
+      this.changePaintOpacity(this.isEnabled(skill));
+      this.drawIcon(skill.iconIndex,  rect.x + 2,  rect.y + 2);
+      this.drawText(skill.name+" ["+skill.skill_range+"km]", rect.x + 40, rect.y, rect.width - costWidth);
+      this.drawSkillCost(skill, rect.x, rect.y, rect.width);
+      this.changePaintOpacity(1);
+  }
+};
+
+var _Window_PartyCommand_makeCommandList = Window_PartyCommand.prototype.makeCommandList;
+Window_PartyCommand.prototype.makeCommandList = function() {
+  this.addCommand("Approach",  'approach');
+  _Window_PartyCommand_makeCommandList.call(this);
 };
 
 //=============================================================================
@@ -399,6 +381,7 @@ var _Game_Enemy_initMembers = Game_Enemy.prototype.initMembers;
 Game_Enemy.prototype.initMembers = function() {
     _Game_Enemy_initMembers.call(this);
     this._position = 0;
+    this._brave = false;
     this._min_distance = 0;
     this._max_distance = 0;
 };
@@ -414,36 +397,38 @@ Game_Enemy.prototype.setupEnemyDistance = function() {
   this._position = this.enemy().position;
   this._min_distance = this.enemy().min_distance;
   this._max_distance = this.enemy().max_distance;
+  this._brave = this.enemy().brave;
 };
 
 Game_Enemy.prototype.position = function() {
   return this._position;
 };
 
-Game_Enemy.prototype.setPosition = function(value) {
-  this._position = value;
+Game_Enemy.prototype.addPosition = function(value) {
+  this._position += value;
+  if(this._position <= this._min_distance){
+    this._position = this._min_distance;
+  }
 };
 
 Game_Enemy.prototype.moveCloser = function(){
-  if(this._position >= this._min_distance){
-    this._position -= this.moveSpeed();
-  }else{
+  this._position -= this.moveSpeed();
+  if(this._position <= this._min_distance){
     this._position = this._min_distance;
   }
- 
-  console.log(this.name() + " move closer "+this.moveSpeed()+"km");
-  console.log("current position : "+this._position);
+  // console.log(this.name() + " move closer "+this.moveSpeed()+"km");
+  // console.log(this.name() + " current position : "+this._position+"km");
 };
 
 Game_Enemy.prototype.moveAway = function(){
   this._position += this.moveSpeed();
-  console.log(this.name() + " move away "+this.moveSpeed()+"km");
-  console.log("current position : "+this._position);
+  // console.log(this.name() + " move away "+this.moveSpeed()+"km");
+  // console.log(this.name() +" current position : "+this._position+"km");
 };
 
 Game_Enemy.prototype.moveSpeed = function(){
   // var speed = Math.floor(this.agi * 0.15);
-  var speed =  Math.floor((this.agi + Math.randomInt(Math.floor(5 + this.agi / 4)))*0.1);
+  var speed =  Math.round((this.agi + Math.randomInt(Math.floor(5 + this.agi / 4)))*0.1);
   if(speed <= 0){
     return 2;
   }
@@ -480,7 +465,8 @@ Game_Actor.prototype.position = function() {
 
 Game_Actor.prototype.moveCloser = function(){
   this._position += this.moveSpeed();
-  console.log(this.name() + " move closer "+this.moveSpeed()+"km");
+  // console.log(this.name() + " move closer "+this.moveSpeed()+"km");
+  // console.log(this.name() +" current position : "+this._position+"km");
 };
 
 Game_Actor.prototype.moveAway = function(){
@@ -488,20 +474,20 @@ Game_Actor.prototype.moveAway = function(){
   if(this._position <= 0){
     this._position = 0;
   }
-  console.log(this.name() + " move away "+this.moveSpeed()+"km");
+  // console.log(this.name() + " move away "+this.moveSpeed()+"km");
+  // console.log(this.name() +" current position : "+this._position+"km");
 };
 
 Game_Actor.prototype.disableMoveCloser = function(){
-  var distance = BattleManager.getSingleDistances(this._position,$gameTroop.aliveMembers());
-  return distance > this._min_distance;
+  //return 
 };
 
 Game_Actor.prototype.disableMoveAway = function(){
-  return this._position > 0;
+  //return
 };
 
 Game_Actor.prototype.moveSpeed = function(){
-  var speed =  Math.floor((this.agi + Math.randomInt(Math.floor(5 + this.agi / 4)))*0.1);
+  var speed =  Math.round((this.agi + Math.randomInt(Math.floor(5 + this.agi / 4)))*0.1);
   if(speed <= 0){
     return 2;
   }
@@ -509,4 +495,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.1;
+Imported.CLEO_BattleRangeCore = 0.4;
