@@ -188,7 +188,7 @@ DataManager.processCLEOSkillNotetags1 = function(group) {
 // BattleManager
 //=============================================================================
 
-// var _BattleManager_processTurn = BattleManager.processTurn;
+// OVERWRITE processTurn method
 BattleManager.processTurn = function() {
   var subject = this._subject;
   var action = subject.currentAction();
@@ -209,13 +209,7 @@ BattleManager.processTurn = function() {
               if(brave){
                 this.startAction();
               }else{
-                if(subject.position() <= subject._max_distance){
-                  subject.moveAway();
-                  this._logWindow.displayMoveAway(subject);
-                }else{
-                  subject._hidden = true;
-                  this._logWindow.displayRunAway(subject);
-                }
+                this.processMoveAway(subject);
               }
             }else{
               this.startAction();
@@ -223,22 +217,12 @@ BattleManager.processTurn = function() {
           }else{
             if(hp_tired){
               if(brave){
-                subject.moveCloser();
-                this._logWindow.displayOutsideRangeLog(subject);
-                this._logWindow.displayMoveCloser(subject);
+                this.processMoveCloser(subject);
               }else{
-                if(subject.position() <= subject._max_distance){
-                  subject.moveAway();
-                  this._logWindow.displayMoveAway(subject);
-                }else{
-                  subject._hidden = true;
-                  this._logWindow.displayRunAway(subject);
-                }
+                this.processMoveAway(subject);
               }
             }else{
-              subject.moveCloser();
-              this._logWindow.displayOutsideRangeLog(subject);
-              this._logWindow.displayMoveCloser(subject);
+              this.processMoveCloser(subject);
             }
           }
         }else{
@@ -271,8 +255,24 @@ BattleManager.processTurn = function() {
 };
 
 BattleManager.getDistance = function (target) {
-    var distance = this._subject.position() - target.position();
-    return Math.abs(distance);
+  var distance = this._subject.position() - target.position();
+  return Math.abs(distance);
+};
+
+BattleManager.processMoveAway = function (subject) {
+  if(subject.position() <= subject._max_distance){
+    subject.moveAway();
+    this._logWindow.displayMoveAway(subject);
+  }else{
+    subject._hidden = true;
+    this._logWindow.displayRunAway(subject);
+  }  
+};
+
+BattleManager.processMoveCloser = function (subject) {
+  subject.moveCloser();
+  this._logWindow.displayOutsideRangeLog(subject);
+  this._logWindow.displayMoveCloser(subject);
 };
 
 //=============================================================================
