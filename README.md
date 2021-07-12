@@ -1,5 +1,5 @@
-# RMMV_PluginsTry
-a repository for me **(a noob scripter)** trying to make plugins from concept to real code, and perhaps can be usable in real implementation.
+# RMMV Battle Mechanic
+a repository for plugins used to add new features in default battle mechanic.
 
 ![Range Mechanic](https://user-images.githubusercontent.com/87144416/125204145-f7cfbd00-e2a5-11eb-9380-23144d598c3f.jpg "Battle Range Core Mechanic RMMV")
 
