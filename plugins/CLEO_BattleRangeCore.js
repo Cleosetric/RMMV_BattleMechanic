@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.5 Add Range Mechanic to Battle System
+* @plugindesc v0.5.1 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
