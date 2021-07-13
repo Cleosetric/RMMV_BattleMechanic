@@ -261,6 +261,15 @@ BattleManager.getDistance = function (target) {
   return Math.abs(distance);
 };
 
+BattleManager.isApproachValid = function () {
+  var troop = $gameTroop.aliveMembers();
+  var valid = false;
+  troop.forEach(function(enemy) {
+    valid = enemy.position() > enemy._min_distance;
+  },this);
+  return valid;
+};
+
 BattleManager.performActionMove = function (leader) {
   var troop = $gameTroop.aliveMembers();
   var party = $gameParty.battleMembers();
@@ -369,7 +378,7 @@ Window_SkillList.prototype.drawItem = function(index) {
 
 var _Window_PartyCommand_makeCommandList = Window_PartyCommand.prototype.makeCommandList;
 Window_PartyCommand.prototype.makeCommandList = function() {
-  this.addCommand("Approach",  'approach');
+  this.addCommand("Approach",  'approach', BattleManager.isApproachValid());
   _Window_PartyCommand_makeCommandList.call(this);
 };
 
