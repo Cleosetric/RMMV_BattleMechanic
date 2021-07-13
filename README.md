@@ -14,6 +14,7 @@ a plugins to add range mechanic to enemy and actor
 - Add Approach Command, so party will move closer to enemy position but cost a turn
 
 **WIP FEATURES LIST**
+- Change Enemy battler sprite scale depend on its position
 - Add Distance HUD to Enemy
 - Add Enemy Detailed Information
 - Add Enemy Selection Target Locking by Range
