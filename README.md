@@ -18,3 +18,4 @@ a plugins to add range mechanic to enemy and actor
 - Add Distance HUD to Enemy
 - Add Enemy Detailed Information
 - Add Enemy Selection Target Locking by Range
+- Add Skill To Stop Enemies Move Away (Tackle)
