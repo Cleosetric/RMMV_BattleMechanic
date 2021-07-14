@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.4.2 Add Range Mechanic to Battle System
+* @plugindesc v0.6 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -261,6 +261,15 @@ BattleManager.getDistance = function (target) {
   return Math.abs(distance);
 };
 
+BattleManager.isApproachValid = function () {
+  var troop = $gameTroop.aliveMembers();
+  var valid = false;
+  troop.forEach(function(enemy) {
+    valid = enemy.position() > enemy._min_distance;
+  },this);
+  return valid;
+};
+
 BattleManager.performActionMove = function (leader) {
   var troop = $gameTroop.aliveMembers();
   var party = $gameParty.battleMembers();
@@ -270,8 +279,9 @@ BattleManager.performActionMove = function (leader) {
   },this);
 
   party.forEach(function(actor) {
-    if(actor.isAlive())
+    if(actor.isAlive()){
       actor.setActionState('waiting');
+    }
   },this);
 
   this.startTurn();
@@ -285,12 +295,111 @@ BattleManager.processMoveAway = function (subject) {
     subject._hidden = true;
     this._logWindow.displayRunAway(subject);
   }  
+  this.resetMotion(subject);
 };
 
 BattleManager.processMoveCloser = function (subject) {
   subject.moveCloser();
   this._logWindow.displayOutsideRangeLog(subject);
   this._logWindow.displayMoveCloser(subject);
+  this.resetMotion(subject);
+};
+
+BattleManager.resetMotion = function(subject){
+  subject._motion = '';
+};
+
+//=============================================================================
+// Sprite_Enemy
+//=============================================================================
+
+var _Sprite_Enemy_initMembers = Sprite_Enemy.prototype.initMembers;
+Sprite_Enemy.prototype.initMembers = function() {
+    _Sprite_Enemy_initMembers.call(this);
+    this.scale.x = 0.1;
+    this.scale.y = 0.1;
+};
+
+var _Sprite_Enemy_update = Sprite_Enemy.prototype.update;
+Sprite_Enemy.prototype.update = function() {
+  _Sprite_Enemy_update.call(this);
+  if (this._enemy) {
+      this.updateScalePos();
+      // this.updateIdleEnemy();
+      this.updateMotion();
+  }
+};
+
+Sprite_Enemy.prototype.updateScalePos = function() {
+  var enemy = this._enemy;
+  var pos = enemy.position();
+  var ratio = 0.1;
+  var ratio_modifier = ((pos*2) / 100);
+  var scaleMod = Math.min(ratio /= ratio_modifier,1);
+
+  this.anchor.x = 0.5;
+  this.anchor.y = 0.65;
+  this.updateScale(scaleMod);
+  
+  // if(pos >= 25) {
+  //   this.updateScale(0.20);
+  // } else if(pos >= 20) {
+  //   this.updateScale(0.60);
+  // } else if(pos >= 15) {
+  //   this.updateScale(0.80);
+  // } else if(pos >= 10) {
+  //   this.updateScale(1);
+  // }
+};
+
+Sprite_Enemy.prototype.updateScale = function(max_size) {
+  if(this.scale.x <= max_size){
+    this.scale.x += 0.01;
+    this.scale.y += 0.01;
+  }else{
+    this.scale.x -= 0.01;
+    this.scale.y -= 0.01;
+  }
+};
+
+Sprite_Enemy.prototype.updateMotion = function() {
+  var enemy = this._enemy;
+  if (!enemy) return;
+  if(enemy.isMoving()){
+      // this.doMoveMotion();
+  } else if (enemy.isInputting() || enemy.isActing()) {
+      // this.doActionMotion();
+  } else {
+      this.doIdleMotion();
+  }
+};
+
+Sprite_Enemy.prototype.doActionMotion = function() {
+};
+
+Sprite_Enemy.prototype.doMoveMotion = function() {
+  var enemy_pos = this._enemy.position();
+  var ratio = 0.1;
+  var ratio_modifier = ((enemy_pos*2) / 100);
+
+  var scaleMod = Math.min(ratio /= ratio_modifier,2);
+  // this.y = this.y - 20;
+
+  this.anchor.x = 0.5;
+  this.anchor.y = 0.65;
+
+  this.scale.x = scaleMod;
+  this.scale.y = scaleMod;
+  console.log("aww");
+  // console.log(enemy_percentage+" | "+enemy_height+" | "+enemy_width);
+};
+
+Sprite_Enemy.prototype.doIdleMotion = function() {
+  var c = Graphics.frameCount + 3;
+  var s = 13;
+  var rateY = 1.420;
+  var scaleY = Math.cos(c / s) * rateY;
+  this.y = this._enemy.spritePosY() + scaleY;
 };
 
 //=============================================================================
@@ -369,7 +478,7 @@ Window_SkillList.prototype.drawItem = function(index) {
 
 var _Window_PartyCommand_makeCommandList = Window_PartyCommand.prototype.makeCommandList;
 Window_PartyCommand.prototype.makeCommandList = function() {
-  this.addCommand("Approach",  'approach');
+  this.addCommand("Approach",  'approach', BattleManager.isApproachValid());
   _Window_PartyCommand_makeCommandList.call(this);
 };
 
@@ -384,6 +493,7 @@ Game_Enemy.prototype.initMembers = function() {
     this._brave = false;
     this._min_distance = 0;
     this._max_distance = 0;
+    this._motion = '';
 };
 
 var _Game_Enemy_setup = Game_Enemy.prototype.setup;
@@ -404,6 +514,10 @@ Game_Enemy.prototype.position = function() {
   return this._position;
 };
 
+Game_Enemy.prototype.isMoving = function() {
+  return  this._motion === 'moving';
+};
+
 Game_Enemy.prototype.addPosition = function(value) {
   this._position += value;
   if(this._position <= this._min_distance){
@@ -416,12 +530,14 @@ Game_Enemy.prototype.moveCloser = function(){
   if(this._position <= this._min_distance){
     this._position = this._min_distance;
   }
+  this._motion == 'moving';
   // console.log(this.name() + " move closer "+this.moveSpeed()+"km");
   // console.log(this.name() + " current position : "+this._position+"km");
 };
 
 Game_Enemy.prototype.moveAway = function(){
   this._position += this.moveSpeed();
+  this._motion == 'moving';
   // console.log(this.name() + " move away "+this.moveSpeed()+"km");
   // console.log(this.name() +" current position : "+this._position+"km");
 };
@@ -434,7 +550,6 @@ Game_Enemy.prototype.moveSpeed = function(){
   }
   return speed;
 };
-
 //=============================================================================
 // Game_Actor
 //=============================================================================
@@ -495,4 +610,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.4;
+Imported.CLEO_BattleRangeCore = 0.6;
