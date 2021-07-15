@@ -16,8 +16,8 @@ a plugins to add range mechanic to enemy and actor
 - Change Enemy battler sprite idle, and move when attacking
 
 **WIP FEATURE LIST:**
-- Add Tag <FLY> to enemy to tag its flying,<GROUND> to tag ground enemy
-- Add Tag <IMOVABLE> to tag enemy is imovable
+- Add Tag [<FLY>] to enemy to tag its flying,[<GROUND>] to tag ground enemy
+- Add Tag [<IMOVABLE>] to tag enemy is imovable
 - Add Distance HUD to Enemy
 - Add Enemy Detailed Information
 - Add Enemy Selection Target Locking by Range
