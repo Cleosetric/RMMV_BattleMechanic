@@ -18,7 +18,10 @@ a plugins to add range mechanic to enemy and actor
 **WIP FEATURE LIST:**
 - Add Tag [<FLY>] to enemy to tag its flying,[<GROUND>] to tag ground enemy
 - Add Tag [<IMOVABLE>] to tag enemy is imovable
+- Add Skill To Stop Enemies Move Away (Tackle)
+
+**WIP HUD & WINDOWS**
 - Add Distance HUD to Enemy
 - Add Enemy Detailed Information
 - Add Enemy Selection Target Locking by Range
-- Add Skill To Stop Enemies Move Away (Tackle)
+
