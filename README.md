@@ -12,4 +12,7 @@ a plugins to add range mechanic to enemy and actor
 - Add escape enemy when enemy move far away to certain distance
 - Add Brave Trait to Enemy, so enemy wouldn't run away from battle
 - Add Approach Command, so party will move closer to enemy position but cost a turn
-- Add Tag <FLY> to enemy to tag its flying 
+
+**WIP**
+- Add Tag <FLY> to enemy to tag its flying , <GROUND> to tag ground enemy
+- Add Tag <IMOVABLE> to tag enemy is imovable

@@ -316,8 +316,21 @@ BattleManager.resetMotion = function(subject){
 var _Sprite_Enemy_initMembers = Sprite_Enemy.prototype.initMembers;
 Sprite_Enemy.prototype.initMembers = function() {
     _Sprite_Enemy_initMembers.call(this);
+};
+
+var _Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
+Sprite_Enemy.prototype.setBattler = function(battler) {
+  _Sprite_Enemy_setBattler.call(this, battler);
+  this.initialSetup();
+};
+
+Sprite_Enemy.prototype.initialSetup = function(){
     this.scale.x = 0.1;
     this.scale.y = 0.1;
+    this.anchor.x = 0.5;
+    this.anchor.y = 0.65;
+    this._shadowSprite = null;
+    this.createShadowSprite();
 };
 
 var _Sprite_Enemy_update = Sprite_Enemy.prototype.update;
@@ -337,28 +350,17 @@ Sprite_Enemy.prototype.updateScalePos = function() {
   var ratio_modifier = ((pos*2) / 100);
   var scaleMod = Math.min(ratio /= ratio_modifier,1);
 
-  this.anchor.x = 0.5;
-  this.anchor.y = 0.65;
+  // console.log(ratio_modifier+" | scale "+scaleMod);
   this.updateScale(scaleMod);
-  
-  // if(pos >= 25) {
-  //   this.updateScale(0.20);
-  // } else if(pos >= 20) {
-  //   this.updateScale(0.60);
-  // } else if(pos >= 15) {
-  //   this.updateScale(0.80);
-  // } else if(pos >= 10) {
-  //   this.updateScale(1);
-  // }
 };
 
 Sprite_Enemy.prototype.updateScale = function(max_size) {
-  if(this.scale.x <= max_size){
+  if(this.scale.x < max_size){
     this.scale.x += 0.01;
     this.scale.y += 0.01;
   }else{
-    this.scale.x -= 0.01;
-    this.scale.y -= 0.01;
+    this.scale.x = max_size;
+    this.scale.y = max_size;
   }
 };
 
@@ -368,38 +370,42 @@ Sprite_Enemy.prototype.updateMotion = function() {
   if(enemy.isMoving()){
       // this.doMoveMotion();
   } else if (enemy.isInputting() || enemy.isActing()) {
-      // this.doActionMotion();
+      this.doActionMotion();
   } else {
       this.doIdleMotion();
   }
 };
 
 Sprite_Enemy.prototype.doActionMotion = function() {
+  this.y = this._enemy.spritePosY() + 60;
 };
 
 Sprite_Enemy.prototype.doMoveMotion = function() {
-  var enemy_pos = this._enemy.position();
-  var ratio = 0.1;
-  var ratio_modifier = ((enemy_pos*2) / 100);
-
-  var scaleMod = Math.min(ratio /= ratio_modifier,2);
-  // this.y = this.y - 20;
-
-  this.anchor.x = 0.5;
-  this.anchor.y = 0.65;
-
-  this.scale.x = scaleMod;
-  this.scale.y = scaleMod;
-  console.log("aww");
-  // console.log(enemy_percentage+" | "+enemy_height+" | "+enemy_width);
+  
 };
 
 Sprite_Enemy.prototype.doIdleMotion = function() {
-  var c = Graphics.frameCount + 3;
-  var s = 13;
-  var rateY = 1.420;
-  var scaleY = Math.cos(c / s) * rateY;
+  var c = Graphics.frameCount + 5;
+  var s = 30;
+  var rateY = 2.75;
+  var scaleY = Math.cos(c/s) * rateY;
   this.y = this._enemy.spritePosY() + scaleY;
+};
+
+Sprite_Enemy.prototype.createShadowSprite = function() {
+  if(!this._shadowSprite){
+    this._shadowSprite = new Sprite();
+    this._shadowSprite.bitmap = ImageManager.loadSystem('Shadow2');
+    this._shadowSprite.anchor.x = 0.5;
+    this._shadowSprite.anchor.y = 0.5;
+    this._shadowSprite.opacity = 255;
+    this._shadowSprite.y = 100;
+    this._shadowSprite.scale.x = 1.5;
+    this._shadowSprite.scale.y = 1.5;
+    
+    console.log(this._shadowSprite);
+    this.addChild(this._shadowSprite);
+  }
 };
 
 //=============================================================================
@@ -550,6 +556,7 @@ Game_Enemy.prototype.moveSpeed = function(){
   }
   return speed;
 };
+
 //=============================================================================
 // Game_Actor
 //=============================================================================
