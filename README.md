@@ -14,11 +14,13 @@ a plugins to add range mechanic to enemy and actor
 - Add Approach Command, so party will move closer to enemy position but cost a turn
 - Change Enemy battler sprite scale depend on its position
 - Change Enemy battler sprite idle, and move when attacking
+- Add Tag &lt;FLY&gt; to enemy to tag its flying, &lt;GROUND&gt; to tag ground enemy
+- Add Tag &lt;IMMOVABLE&gt; to tag enemy is immovable
 
 **WIP FEATURE LIST:**
-- Add Tag [<FLY>] to enemy to tag its flying,[<GROUND>] to tag ground enemy
-- Add Tag [<IMOVABLE>] to tag enemy is imovable
-- Add Skill To Stop Enemies Move Away (Tackle)
+- Set enemy battler Y position by it's position / distance
+- Add Skill (State) To Stop Enemies Move Away (Tackle)
+- Selection to only enemy/s has tag &lt;FLY&gt; or &lt;GROUND&gt;
 
 **WIP HUD & WINDOWS**
 - Add Distance HUD to Enemy

@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.6 Add Range Mechanic to Battle System
+* @plugindesc v0.7 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -66,6 +66,9 @@
  *   <MIN DISTANCE: x>  = SET MINIMAL DISTANCE ENEMY WILL STOP MOVE
  *   <MAX DISTANCE: x>  = SET MAXIMAL DISTANCE ENEMY WILL RUN AWAY
  *   <BRAVE>            = SET TRAIT THAT ENEMY WILL NOT MOVE AWAY EVEN IN LOW HEALTH
+ *   <FLY>              = SET FLY TAG TO ENEMY
+ *   <GROUND>           = SET GROUND TAG TO ENEMY
+ *   <IMMOVABLE>        = SET TAG ENEMY SO ENEMY WILL NOT PERFROM MOVEMENT
  *
  * Actor Notetags:
  *
@@ -131,11 +134,20 @@ DataManager.processCLEOEnemyNotetags1 = function(group) {
     obj.min_distance = $.Param.enemy_min_distance;
     obj.max_distance = $.Param.enemy_max_distance;
     obj.brave = false;
+    obj.fly = false;
+    obj.ground = false;
+    obj.immovable = false;
 
     for (var i = 0; i < notedata.length; i++) {
       var line = notedata[i];
       if (line.match(/<(?:BRAVE)>/i)) {
         obj.brave = true;
+      }else if (line.match(/<(?:FLY)>/i)) {
+        obj.fly = true;
+      }else if (line.match(/<(?:GROUND)>/i)) {
+        obj.ground = true;
+      }else if (line.match(/<(?:IMMOVABLE)>/i)) {
+        obj.immovable = true;
       }else if (line.match(/<(?:SET POSITION):[ ](\d+)>/i)) {
         obj.position = parseInt(RegExp.$1);
       }else if (line.match(/<(?:MIN DISTANCE):[ ](\d+)>/i)) {
@@ -301,7 +313,11 @@ BattleManager.processMoveAway = function (subject) {
 BattleManager.processMoveCloser = function (subject) {
   subject.moveCloser();
   this._logWindow.displayOutsideRangeLog(subject);
-  this._logWindow.displayMoveCloser(subject);
+  if(subject.isEnemy() && !subject._immovable){
+    this._logWindow.displayMoveCloser(subject);
+  }else{
+    this._logWindow.displayImmovable(subject);
+  }
   this.resetMotion(subject);
 };
 
@@ -389,21 +405,25 @@ Sprite_Enemy.prototype.doIdleMotion = function() {
   var s = 30;
   var rateY = 2.75;
   var scaleY = Math.cos(c/s) * rateY;
-  this.y = this._enemy.spritePosY() + scaleY;
+  if(this._enemy._ground){
+    this.y = this._enemy.spritePosY();
+  }else{
+    this.y = this._enemy.spritePosY() + scaleY;
+  }
+  
 };
 
 Sprite_Enemy.prototype.createShadowSprite = function() {
   if(!this._shadowSprite){
+    console.log(this._enemy.battlerName()+" "+this._enemy._ground);
     this._shadowSprite = new Sprite();
     this._shadowSprite.bitmap = ImageManager.loadSystem('Shadow2');
+    this._enemy._ground ? this._shadowSprite.y = 60 : this._shadowSprite.y = 120;
     this._shadowSprite.anchor.x = 0.5;
     this._shadowSprite.anchor.y = 0.5;
     this._shadowSprite.opacity = 255;
-    this._shadowSprite.y = 100;
     this._shadowSprite.scale.x = 1.5;
     this._shadowSprite.scale.y = 1.5;
-    
-    console.log(this._shadowSprite);
     this.addChild(this._shadowSprite);
   }
 };
@@ -431,6 +451,15 @@ Scene_Battle.prototype.commandApproach = function() {
 
 Window_BattleLog.prototype.displayMoveCloser = function(subject) {
   var stateText = " Move Closer";
+  if (stateText) {
+      this.push('addText', subject.name() + stateText);
+      this.push('wait');
+      this.push('clear');
+  }
+};
+
+Window_BattleLog.prototype.displayImmovable = function(subject) {
+  var stateText = " is Waiting";
   if (stateText) {
       this.push('addText', subject.name() + stateText);
       this.push('wait');
@@ -497,6 +526,10 @@ Game_Enemy.prototype.initMembers = function() {
     _Game_Enemy_initMembers.call(this);
     this._position = 0;
     this._brave = false;
+    this._fly = false;
+    this._ground = false;
+    this._immovable = false;
+    this._brave = false;
     this._min_distance = 0;
     this._max_distance = 0;
     this._motion = '';
@@ -514,6 +547,9 @@ Game_Enemy.prototype.setupEnemyDistance = function() {
   this._min_distance = this.enemy().min_distance;
   this._max_distance = this.enemy().max_distance;
   this._brave = this.enemy().brave;
+  this._fly = this.enemy().fly;
+  this._ground = this.enemy().ground;
+  this._immovable = this.enemy().immovable;
 };
 
 Game_Enemy.prototype.position = function() {
@@ -532,18 +568,22 @@ Game_Enemy.prototype.addPosition = function(value) {
 };
 
 Game_Enemy.prototype.moveCloser = function(){
-  this._position -= this.moveSpeed();
-  if(this._position <= this._min_distance){
-    this._position = this._min_distance;
+  if(!this._immovable){
+    this._position -= this.moveSpeed();
+    if(this._position <= this._min_distance){
+      this._position = this._min_distance;
+    }
+    this._motion == 'moving';
   }
-  this._motion == 'moving';
   // console.log(this.name() + " move closer "+this.moveSpeed()+"km");
   // console.log(this.name() + " current position : "+this._position+"km");
 };
 
 Game_Enemy.prototype.moveAway = function(){
-  this._position += this.moveSpeed();
-  this._motion == 'moving';
+  if(!this._immovable){
+    this._position += this.moveSpeed();
+    this._motion == 'moving';
+  }
   // console.log(this.name() + " move away "+this.moveSpeed()+"km");
   // console.log(this.name() +" current position : "+this._position+"km");
 };
@@ -592,20 +632,12 @@ Game_Actor.prototype.moveCloser = function(){
 };
 
 Game_Actor.prototype.moveAway = function(){
-  this._position -= this.moveSpeed();
+  this._position -= this.moveSpeed()/2;
   if(this._position <= 0){
     this._position = 0;
   }
   // console.log(this.name() + " move away "+this.moveSpeed()+"km");
   // console.log(this.name() +" current position : "+this._position+"km");
-};
-
-Game_Actor.prototype.disableMoveCloser = function(){
-  //return 
-};
-
-Game_Actor.prototype.disableMoveAway = function(){
-  //return
 };
 
 Game_Actor.prototype.moveSpeed = function(){
@@ -617,4 +649,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.6;
+Imported.CLEO_BattleRangeCore = 0.7;
