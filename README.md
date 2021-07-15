@@ -1,7 +1,7 @@
 # RMMV_PluginsTry
 a repository for me **(a noob scripter)** trying to make plugins from concept to real code, and perhaps can be usable in real implementation.
 
-![Range Mechanic](https://user-images.githubusercontent.com/87144416/125829418-4e46e939-4da5-4bd0-b53e-41e01909cd9b.jpg"Battle Range Core Mechanic RMMV")
+![Range Mechanic]("https://user-images.githubusercontent.com/87144416/125829418-4e46e939-4da5-4bd0-b53e-41e01909cd9b.jpg" Battle Range Core Mechanic RMMV")
 
 ## Range Core Mechanic
 a plugins to add range mechanic to enemy and actor
