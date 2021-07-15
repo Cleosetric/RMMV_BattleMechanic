@@ -12,7 +12,13 @@ a plugins to add range mechanic to enemy and actor
 - Add escape enemy when enemy move far away to certain distance
 - Add Brave Trait to Enemy, so enemy wouldn't run away from battle
 - Add Approach Command, so party will move closer to enemy position but cost a turn
+- Change Enemy battler sprite scale depend on its position
+- Change Enemy battler sprite idle, and move when attacking
 
-**WIP**
+**WIP FEATURE LIST:**
 - Add Tag <FLY> to enemy to tag its flying , <GROUND> to tag ground enemy
 - Add Tag <IMOVABLE> to tag enemy is imovable
+- Add Distance HUD to Enemy
+- Add Enemy Detailed Information
+- Add Enemy Selection Target Locking by Range
+- Add Skill To Stop Enemies Move Away (Tackle)
