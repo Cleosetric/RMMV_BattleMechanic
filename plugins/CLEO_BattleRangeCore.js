@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.7 Add Range Mechanic to Battle System
+* @plugindesc v0.7.1 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -299,6 +299,11 @@ BattleManager.performActionMove = function (leader) {
   this.startTurn();
 };
 
+var _BattleManager_startInput = BattleManager.startInput;
+BattleManager.startInput = function() {
+  _BattleManager_startInput.call(this);
+};
+
 BattleManager.processMoveAway = function (subject) {
   if(subject.position() <= subject._max_distance){
     subject.moveAway();
@@ -338,6 +343,21 @@ var _Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
 Sprite_Enemy.prototype.setBattler = function(battler) {
   _Sprite_Enemy_setBattler.call(this, battler);
   this.initialSetup();
+  this.setupEnemyPos();
+};
+
+Sprite_Enemy.prototype.setupEnemyPos = function(){
+  var enemy = this._enemy;
+  var pos = enemy.position();
+  var homeY = 0;
+  if (pos >= 30) {
+    homeY = 150;
+  } else if (pos >= 20) {
+    homeY = 200;
+  } else if (pos >= 10) {
+    homeY = 250;
+  }
+  this.setHome(enemy.screenX(), homeY);
 };
 
 Sprite_Enemy.prototype.initialSetup = function(){
@@ -443,6 +463,22 @@ Scene_Battle.prototype.createPartyCommandWindow = function() {
 Scene_Battle.prototype.commandApproach = function() {
   var leader = $gameParty.leader();
   BattleManager.performActionMove(leader);
+};
+
+Scene_Battle.prototype.changeInputWindow = function() {
+  var actor = BattleManager.actor();
+  if (BattleManager.isInputting()) {
+      if (actor) {
+          Galv.ZOOM.move(actor.spritePosX(),actor.spritePosY() -100,1.65,30); 
+          this.startActorCommandSelection();
+      } else {
+        Galv.ZOOM.center(0.85,30); 
+          this.startPartyCommandSelection();
+      }
+  } else {
+      Galv.ZOOM.restore(30);
+      this.endCommandSelection();
+  }
 };
 
 //=============================================================================
@@ -573,7 +609,7 @@ Game_Enemy.prototype.moveCloser = function(){
     if(this._position <= this._min_distance){
       this._position = this._min_distance;
     }
-    this._motion == 'moving';
+    this._motion = 'moving';
   }
   // console.log(this.name() + " move closer "+this.moveSpeed()+"km");
   // console.log(this.name() + " current position : "+this._position+"km");
@@ -581,8 +617,8 @@ Game_Enemy.prototype.moveCloser = function(){
 
 Game_Enemy.prototype.moveAway = function(){
   if(!this._immovable){
-    this._position += this.moveSpeed();
-    this._motion == 'moving';
+    this._position += Math.round(this.moveSpeed()/1.5);
+    this._motion = 'moving';
   }
   // console.log(this.name() + " move away "+this.moveSpeed()+"km");
   // console.log(this.name() +" current position : "+this._position+"km");
@@ -638,6 +674,14 @@ Game_Actor.prototype.moveAway = function(){
   }
   // console.log(this.name() + " move away "+this.moveSpeed()+"km");
   // console.log(this.name() +" current position : "+this._position+"km");
+};
+
+Game_Actor.prototype.disableMoveCloser = function(){
+  //return 
+};
+
+Game_Actor.prototype.disableMoveAway = function(){
+  //return
 };
 
 Game_Actor.prototype.moveSpeed = function(){
