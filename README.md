@@ -1,6 +1,7 @@
 # Introduction
 Oya oya hello there, uh this is a repository for me **(a noob scripter)** trying to make plugins for RMMV Engine, from concept to real code, and perhaps can be usable in real implementation (or not), maybe  will release like a short battle demo (prototype)after done write all the plugin.
 
+
 # (Try) RMMV Battle Mechanic
 a repository for plugins used to add new features in default battle mechanic.
 
@@ -9,7 +10,7 @@ a repository for plugins used to add new features in default battle mechanic.
 ## Range Core Mechanic
 a plugins to add range mechanic to enemy and actor
 
-**IMPLEMENTED FEATURE LIST:**
+**IMPLEMENTED FEATURES LIST:**
 - Add position and distance for Actor and Enemy
 - Add skill range based subject position
 - Add escape enemy when enemy move far away to certain distance
@@ -50,4 +51,3 @@ a plugin for create battle UI or commonly called Battle HUD to show detail infor
 - Add Enemy Detailed Information (By Trigger Button)
 - Add Enemy Selection Target Locking by Range
 - Add Skill Range and Weapon / Modules Sprite, Detail Information
-

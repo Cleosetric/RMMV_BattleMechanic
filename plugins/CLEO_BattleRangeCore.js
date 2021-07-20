@@ -706,4 +706,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.7;
+Imported.CLEO_BattleRangeCore = 0.8;
