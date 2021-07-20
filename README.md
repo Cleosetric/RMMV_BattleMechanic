@@ -1,5 +1,8 @@
-# RMMV_PluginsTry
-a repository for me **(a noob scripter)** trying to make plugins from concept to real code, and perhaps can be usable in real implementation.
+# Introduction
+Oya oya hello there, uh this is a repository for me **(a noob scripter)** trying to make plugins for RMMV Engine, from concept to real code, and perhaps can be usable in real implementation (or not), maybe  will release like a short battle demo (prototype)after done write all the plugin.
+
+# (Try) RMMV Battle Mechanic
+a repository for plugins used to add new features in default battle mechanic.
 
 ![Range Mechanic](https://user-images.githubusercontent.com/87144416/126355025-0ca198e8-73c7-431a-98d5-34f5ddd7ecee.jpg "Battle Range Core Mechanic RMMV")
 
@@ -21,7 +24,7 @@ a plugins to add range mechanic to enemy and actor
 - Add Skill (State) To Stop Enemies Move Away aka Propulsion Jammer (Disrupted)
 
 ## Weapon Attack-TP Booster
-a plugins to add ATP as a default attack booster, ATP is accumulated point of default TP (Increase each time perform a hit) and will increase to Level-3 ATP.
+a plugins to add ATP as a default attack booster, ATP is accumulated point of default TP (Increase each time perform a hit) and will increase up to Level-3 ATP.
 
 **WIP FEATURE LIST :**
 - Add ATP Mechanic
