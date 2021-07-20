@@ -1,7 +1,7 @@
 # RMMV_PluginsTry
 a repository for me **(a noob scripter)** trying to make plugins from concept to real code, and perhaps can be usable in real implementation.
 
-![Range Mechanic](https://user-images.githubusercontent.com/87144416/125829797-7736b21c-9fc6-4fb2-9200-48d79a8d239f.jpg "Battle Range Core Mechanic RMMV")
+![Range Mechanic](https://user-images.githubusercontent.com/87144416/126355025-0ca198e8-73c7-431a-98d5-34f5ddd7ecee.jpg "Battle Range Core Mechanic RMMV")
 
 ## Range Core Mechanic
 a plugins to add range mechanic to enemy and actor
@@ -35,7 +35,7 @@ a skill input squence, as long as power grid still not empty you can perform any
 - Add Squence Skill Input
 - Add PowerGrid restriction based on Actor's MP and skill's MP
 
-## BATTLE HUD
+## Battle HUD
 a plugin for create battle UI or commonly called Battle HUD to show detail information about what happen in the battle scene
 
 **WIP HUD & WINDOWS**
