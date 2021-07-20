@@ -7,7 +7,7 @@ a repository for plugins used to add new features in default battle mechanic.
 
 ![Range Mechanic](https://user-images.githubusercontent.com/87144416/126355025-0ca198e8-73c7-431a-98d5-34f5ddd7ecee.jpg "Battle Range Core Mechanic RMMV")
 
-## - [x] Range Core Mechanic ✔
+## Range Core Mechanic ✔
 a plugins to add range mechanic to enemy and actor
 
 **IMPLEMENTED FEATURES LIST:**
@@ -24,7 +24,7 @@ a plugins to add range mechanic to enemy and actor
 - Add Party Sprite Front-view with auto aligned center
 - Add Skill (State) To Stop Enemies Move Away aka Propulsion Jammer (Disrupted)
 
-## - [ ] Weapon Attack-TP Booster
+## Weapon Attack-TP Booster ✘
 a plugins to add ATP as a default attack booster, ATP is accumulated point of default TP (Increase each time perform a hit) and will increase up to Level-3 ATP.
 
 **WIP FEATURE LIST :**
@@ -32,14 +32,14 @@ a plugins to add ATP as a default attack booster, ATP is accumulated point of de
 - ATP is add bonus damage to next default attack
 - When ATP is level-3 and perform next default attack, ATP level is reset
 
-## - [ ] Skill Input Squence
+## Skill Input Squence ✘
 a skill input squence, as long as power grid still not empty you can perform any skill available
 
 **WIP FEATURE LIST :**
 - Add Squence Skill Input
 - Add PowerGrid restriction based on Actor's MP and skill's MP
 
-## - [ ] Battle HUD
+## Battle HUD ✘
 a plugin for create battle UI or commonly called Battle HUD to show detail information about what happen in the battle scene
 
 **WIP HUD & WINDOWS**
