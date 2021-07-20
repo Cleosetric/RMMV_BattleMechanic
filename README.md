@@ -17,14 +17,26 @@ a plugins to add range mechanic to enemy and actor
 - Add Tag &lt;FLY&gt; to enemy to tag its flying, &lt;GROUND&gt; to tag ground enemy
 - Add Tag &lt;IMMOVABLE&gt; to tag enemy is immovable
 - Set enemy battler Y position by it's position / distance
+- Add Party Sprite Front-view with auto aligned center
+- Add Skill (State) To Stop Enemies Move Away aka Propulsion Jammer (Disrupted)
 
-**WIP FEATURE LIST:**
-- Add Party Sprite
-- Add Skill (State) To Stop Enemies Move Away (Tackle)
-- Selection to only enemy/s has tag &lt;FLY&gt; or &lt;GROUND&gt;
+## Skill Input Squence
+a skill input squence, as long as power grid still not empty you can perform any skill available
+
+**WIP FEATURE LIST**
+- Add Squence Skill Input
+- Add PowerGrid restriction based on Actor's MP and skill's MP
+
+## BATTLE HUD
+a plugin for create battle UI or commonly called Battle HUD to show detail information about what happen in the battle scene
 
 **WIP HUD & WINDOWS**
+- Add Turn-Order HUD
 - Add Distance HUD to Enemy
-- Add Enemy Detailed Information
+- Add Party HUD
+- Add Troop HUD
+- Add Power-Grid (MP) HUD
+- Add Enemy Detailed Information (By Trigger Button)
 - Add Enemy Selection Target Locking by Range
+- Add Skill Range and Weapon / Modules Sprite, Detail Information
 

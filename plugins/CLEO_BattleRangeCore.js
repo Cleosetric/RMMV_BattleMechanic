@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.7.1 Add Range Mechanic to Battle System
+* @plugindesc v0.8 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -43,6 +43,11 @@
 * @param skill_range
 * @desc maximal skill range from player
 * @default 10
+* @parent ---Skill Setting---
+*
+* @param state_tackleId
+* @desc stateId to identify it as disruptor
+* @default 14
 * @parent ---Skill Setting---
 *
 * @help
@@ -108,6 +113,7 @@ var CLEO_BattleRangeCore = CLEO_BattleRangeCore || {};
   $.Param.actor_max_distance = Number($.Parameters.actor_max_distance ||40);
 
   $.Param.skill_range = Number($.Parameters.skill_range || 10);
+  $.Param.state_tackleId = Number($.Parameters.state_tackleId || 14);
 
 //=============================================================================
 // Script begin here tehee                                                             
@@ -306,8 +312,14 @@ BattleManager.startInput = function() {
 
 BattleManager.processMoveAway = function (subject) {
   if(subject.position() <= subject._max_distance){
-    subject.moveAway();
-    this._logWindow.displayMoveAway(subject);
+    //Get Tackled by State Disrupted (14)
+    if(subject.isStateAffected($.Param.state_tackleId)){
+      this._logWindow.displayImmovable(subject);
+    }else{
+      subject.moveAway();
+      this._logWindow.displayMoveAway(subject);
+    }
+    
   }else{
     subject._hidden = true;
     this._logWindow.displayRunAway(subject);
@@ -346,6 +358,15 @@ Sprite_Enemy.prototype.setBattler = function(battler) {
   this.setupEnemyPos();
 };
 
+Sprite_Enemy.prototype.initialSetup = function(){
+    this.scale.x = 0.1;
+    this.scale.y = 0.1;
+    this.anchor.x = 0.5;
+    this.anchor.y = 0.65;
+    this._shadowSprite = null;
+    this.createShadowSprite();
+};
+
 Sprite_Enemy.prototype.setupEnemyPos = function(){
   var enemy = this._enemy;
   var pos = enemy.position();
@@ -360,21 +381,13 @@ Sprite_Enemy.prototype.setupEnemyPos = function(){
   this.setHome(enemy.screenX(), homeY);
 };
 
-Sprite_Enemy.prototype.initialSetup = function(){
-    this.scale.x = 0.1;
-    this.scale.y = 0.1;
-    this.anchor.x = 0.5;
-    this.anchor.y = 0.65;
-    this._shadowSprite = null;
-    this.createShadowSprite();
-};
+
 
 var _Sprite_Enemy_update = Sprite_Enemy.prototype.update;
 Sprite_Enemy.prototype.update = function() {
   _Sprite_Enemy_update.call(this);
   if (this._enemy) {
       this.updateScalePos();
-      // this.updateIdleEnemy();
       this.updateMotion();
   }
 };
@@ -404,7 +417,7 @@ Sprite_Enemy.prototype.updateMotion = function() {
   var enemy = this._enemy;
   if (!enemy) return;
   if(enemy.isMoving()){
-      // this.doMoveMotion();
+      this.doMoveMotion();
   } else if (enemy.isInputting() || enemy.isActing()) {
       this.doActionMotion();
   } else {
@@ -469,10 +482,10 @@ Scene_Battle.prototype.changeInputWindow = function() {
   var actor = BattleManager.actor();
   if (BattleManager.isInputting()) {
       if (actor) {
-          Galv.ZOOM.move(actor.spritePosX(),actor.spritePosY() -100,1.65,30); 
+          Galv.ZOOM.move(actor.spritePosX(),actor.spritePosY() -200,1.75,30); 
           this.startActorCommandSelection();
       } else {
-        Galv.ZOOM.center(0.85,30); 
+        Galv.ZOOM.center(1,30); 
           this.startPartyCommandSelection();
       }
   } else {
@@ -495,7 +508,7 @@ Window_BattleLog.prototype.displayMoveCloser = function(subject) {
 };
 
 Window_BattleLog.prototype.displayImmovable = function(subject) {
-  var stateText = " is Waiting";
+  var stateText = " is Can't Perform Move";
   if (stateText) {
       this.push('addText', subject.name() + stateText);
       this.push('wait');
