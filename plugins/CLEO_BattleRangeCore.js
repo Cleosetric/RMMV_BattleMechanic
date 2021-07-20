@@ -4,7 +4,7 @@
 /*:
 *
 * @author Cleosetric
-* @plugindesc v0.5.1 Add Range Mechanic to Battle System
+* @plugindesc v0.8 Add Range Mechanic to Battle System
 *
 * @param ---Enemy Setting---
 * @param ---Actor Setting---
@@ -45,6 +45,11 @@
 * @default 10
 * @parent ---Skill Setting---
 *
+* @param state_tackleId
+* @desc stateId to identify it as disruptor
+* @default 14
+* @parent ---Skill Setting---
+*
 * @help
  * ============================================================================
  * Introduction
@@ -66,6 +71,9 @@
  *   <MIN DISTANCE: x>  = SET MINIMAL DISTANCE ENEMY WILL STOP MOVE
  *   <MAX DISTANCE: x>  = SET MAXIMAL DISTANCE ENEMY WILL RUN AWAY
  *   <BRAVE>            = SET TRAIT THAT ENEMY WILL NOT MOVE AWAY EVEN IN LOW HEALTH
+ *   <FLY>              = SET FLY TAG TO ENEMY
+ *   <GROUND>           = SET GROUND TAG TO ENEMY
+ *   <IMMOVABLE>        = SET TAG ENEMY SO ENEMY WILL NOT PERFROM MOVEMENT
  *
  * Actor Notetags:
  *
@@ -105,6 +113,7 @@ var CLEO_BattleRangeCore = CLEO_BattleRangeCore || {};
   $.Param.actor_max_distance = Number($.Parameters.actor_max_distance ||40);
 
   $.Param.skill_range = Number($.Parameters.skill_range || 10);
+  $.Param.state_tackleId = Number($.Parameters.state_tackleId || 14);
 
 //=============================================================================
 // Script begin here tehee                                                             
@@ -131,11 +140,20 @@ DataManager.processCLEOEnemyNotetags1 = function(group) {
     obj.min_distance = $.Param.enemy_min_distance;
     obj.max_distance = $.Param.enemy_max_distance;
     obj.brave = false;
+    obj.fly = false;
+    obj.ground = false;
+    obj.immovable = false;
 
     for (var i = 0; i < notedata.length; i++) {
       var line = notedata[i];
       if (line.match(/<(?:BRAVE)>/i)) {
         obj.brave = true;
+      }else if (line.match(/<(?:FLY)>/i)) {
+        obj.fly = true;
+      }else if (line.match(/<(?:GROUND)>/i)) {
+        obj.ground = true;
+      }else if (line.match(/<(?:IMMOVABLE)>/i)) {
+        obj.immovable = true;
       }else if (line.match(/<(?:SET POSITION):[ ](\d+)>/i)) {
         obj.position = parseInt(RegExp.$1);
       }else if (line.match(/<(?:MIN DISTANCE):[ ](\d+)>/i)) {
@@ -279,27 +297,168 @@ BattleManager.performActionMove = function (leader) {
   },this);
 
   party.forEach(function(actor) {
-    if(actor.isAlive())
+    if(actor.isAlive()){
       actor.setActionState('waiting');
+    }
   },this);
 
   this.startTurn();
 };
 
+var _BattleManager_startInput = BattleManager.startInput;
+BattleManager.startInput = function() {
+  _BattleManager_startInput.call(this);
+};
+
 BattleManager.processMoveAway = function (subject) {
   if(subject.position() <= subject._max_distance){
-    subject.moveAway();
-    this._logWindow.displayMoveAway(subject);
+    //Get Tackled by State Disrupted (14)
+    if(subject.isStateAffected($.Param.state_tackleId)){
+      this._logWindow.displayImmovable(subject);
+    }else{
+      subject.moveAway();
+      this._logWindow.displayMoveAway(subject);
+    }
+    
   }else{
     subject._hidden = true;
     this._logWindow.displayRunAway(subject);
   }  
+  this.resetMotion(subject);
 };
 
 BattleManager.processMoveCloser = function (subject) {
   subject.moveCloser();
   this._logWindow.displayOutsideRangeLog(subject);
-  this._logWindow.displayMoveCloser(subject);
+  if(subject.isEnemy() && !subject._immovable){
+    this._logWindow.displayMoveCloser(subject);
+  }else{
+    this._logWindow.displayImmovable(subject);
+  }
+  this.resetMotion(subject);
+};
+
+BattleManager.resetMotion = function(subject){
+  subject._motion = '';
+};
+
+//=============================================================================
+// Sprite_Enemy
+//=============================================================================
+
+var _Sprite_Enemy_initMembers = Sprite_Enemy.prototype.initMembers;
+Sprite_Enemy.prototype.initMembers = function() {
+    _Sprite_Enemy_initMembers.call(this);
+};
+
+var _Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
+Sprite_Enemy.prototype.setBattler = function(battler) {
+  _Sprite_Enemy_setBattler.call(this, battler);
+  this.initialSetup();
+  this.setupEnemyPos();
+};
+
+Sprite_Enemy.prototype.initialSetup = function(){
+    this.scale.x = 0.1;
+    this.scale.y = 0.1;
+    this.anchor.x = 0.5;
+    this.anchor.y = 0.65;
+    this._shadowSprite = null;
+    this.createShadowSprite();
+};
+
+Sprite_Enemy.prototype.setupEnemyPos = function(){
+  var enemy = this._enemy;
+  var pos = enemy.position();
+  var homeY = 0;
+  if (pos >= 30) {
+    homeY = 150;
+  } else if (pos >= 20) {
+    homeY = 200;
+  } else if (pos >= 10) {
+    homeY = 250;
+  }
+  this.setHome(enemy.screenX(), homeY);
+};
+
+
+
+var _Sprite_Enemy_update = Sprite_Enemy.prototype.update;
+Sprite_Enemy.prototype.update = function() {
+  _Sprite_Enemy_update.call(this);
+  if (this._enemy) {
+      this.updateScalePos();
+      this.updateMotion();
+  }
+};
+
+Sprite_Enemy.prototype.updateScalePos = function() {
+  var enemy = this._enemy;
+  var pos = enemy.position();
+  var ratio = 0.1;
+  var ratio_modifier = ((pos*2) / 100);
+  var scaleMod = Math.min(ratio /= ratio_modifier,1);
+
+  // console.log(ratio_modifier+" | scale "+scaleMod);
+  this.updateScale(scaleMod);
+};
+
+Sprite_Enemy.prototype.updateScale = function(max_size) {
+  if(this.scale.x < max_size){
+    this.scale.x += 0.01;
+    this.scale.y += 0.01;
+  }else{
+    this.scale.x = max_size;
+    this.scale.y = max_size;
+  }
+};
+
+Sprite_Enemy.prototype.updateMotion = function() {
+  var enemy = this._enemy;
+  if (!enemy) return;
+  if(enemy.isMoving()){
+      this.doMoveMotion();
+  } else if (enemy.isInputting() || enemy.isActing()) {
+      this.doActionMotion();
+  } else {
+      this.doIdleMotion();
+  }
+};
+
+Sprite_Enemy.prototype.doActionMotion = function() {
+  this.y = this._enemy.spritePosY() + 60;
+};
+
+Sprite_Enemy.prototype.doMoveMotion = function() {
+  
+};
+
+Sprite_Enemy.prototype.doIdleMotion = function() {
+  var c = Graphics.frameCount + 5;
+  var s = 30;
+  var rateY = 2.75;
+  var scaleY = Math.cos(c/s) * rateY;
+  if(this._enemy._ground){
+    this.y = this._enemy.spritePosY();
+  }else{
+    this.y = this._enemy.spritePosY() + scaleY;
+  }
+  
+};
+
+Sprite_Enemy.prototype.createShadowSprite = function() {
+  if(!this._shadowSprite){
+    console.log(this._enemy.battlerName()+" "+this._enemy._ground);
+    this._shadowSprite = new Sprite();
+    this._shadowSprite.bitmap = ImageManager.loadSystem('Shadow2');
+    this._enemy._ground ? this._shadowSprite.y = 60 : this._shadowSprite.y = 120;
+    this._shadowSprite.anchor.x = 0.5;
+    this._shadowSprite.anchor.y = 0.5;
+    this._shadowSprite.opacity = 255;
+    this._shadowSprite.scale.x = 1.5;
+    this._shadowSprite.scale.y = 1.5;
+    this.addChild(this._shadowSprite);
+  }
 };
 
 //=============================================================================
@@ -319,12 +478,37 @@ Scene_Battle.prototype.commandApproach = function() {
   BattleManager.performActionMove(leader);
 };
 
+Scene_Battle.prototype.changeInputWindow = function() {
+  var actor = BattleManager.actor();
+  if (BattleManager.isInputting()) {
+      if (actor) {
+          Galv.ZOOM.move(actor.spritePosX(),actor.spritePosY() -200,1.75,30); 
+          this.startActorCommandSelection();
+      } else {
+        Galv.ZOOM.center(1,30); 
+          this.startPartyCommandSelection();
+      }
+  } else {
+      Galv.ZOOM.restore(30);
+      this.endCommandSelection();
+  }
+};
+
 //=============================================================================
 // Window_Any*
 //=============================================================================
 
 Window_BattleLog.prototype.displayMoveCloser = function(subject) {
   var stateText = " Move Closer";
+  if (stateText) {
+      this.push('addText', subject.name() + stateText);
+      this.push('wait');
+      this.push('clear');
+  }
+};
+
+Window_BattleLog.prototype.displayImmovable = function(subject) {
+  var stateText = " is Can't Perform Move";
   if (stateText) {
       this.push('addText', subject.name() + stateText);
       this.push('wait');
@@ -391,8 +575,13 @@ Game_Enemy.prototype.initMembers = function() {
     _Game_Enemy_initMembers.call(this);
     this._position = 0;
     this._brave = false;
+    this._fly = false;
+    this._ground = false;
+    this._immovable = false;
+    this._brave = false;
     this._min_distance = 0;
     this._max_distance = 0;
+    this._motion = '';
 };
 
 var _Game_Enemy_setup = Game_Enemy.prototype.setup;
@@ -407,10 +596,17 @@ Game_Enemy.prototype.setupEnemyDistance = function() {
   this._min_distance = this.enemy().min_distance;
   this._max_distance = this.enemy().max_distance;
   this._brave = this.enemy().brave;
+  this._fly = this.enemy().fly;
+  this._ground = this.enemy().ground;
+  this._immovable = this.enemy().immovable;
 };
 
 Game_Enemy.prototype.position = function() {
   return this._position;
+};
+
+Game_Enemy.prototype.isMoving = function() {
+  return  this._motion === 'moving';
 };
 
 Game_Enemy.prototype.addPosition = function(value) {
@@ -421,16 +617,22 @@ Game_Enemy.prototype.addPosition = function(value) {
 };
 
 Game_Enemy.prototype.moveCloser = function(){
-  this._position -= this.moveSpeed();
-  if(this._position <= this._min_distance){
-    this._position = this._min_distance;
+  if(!this._immovable){
+    this._position -= this.moveSpeed();
+    if(this._position <= this._min_distance){
+      this._position = this._min_distance;
+    }
+    this._motion = 'moving';
   }
   // console.log(this.name() + " move closer "+this.moveSpeed()+"km");
   // console.log(this.name() + " current position : "+this._position+"km");
 };
 
 Game_Enemy.prototype.moveAway = function(){
-  this._position += this.moveSpeed();
+  if(!this._immovable){
+    this._position += Math.round(this.moveSpeed()/1.5);
+    this._motion = 'moving';
+  }
   // console.log(this.name() + " move away "+this.moveSpeed()+"km");
   // console.log(this.name() +" current position : "+this._position+"km");
 };
@@ -479,7 +681,7 @@ Game_Actor.prototype.moveCloser = function(){
 };
 
 Game_Actor.prototype.moveAway = function(){
-  this._position -= this.moveSpeed();
+  this._position -= this.moveSpeed()/2;
   if(this._position <= 0){
     this._position = 0;
   }
@@ -504,4 +706,4 @@ Game_Actor.prototype.moveSpeed = function(){
 };
 
 })(CLEO_BattleRangeCore);
-Imported.CLEO_BattleRangeCore = 0.5;
+Imported.CLEO_BattleRangeCore = 0.8;
