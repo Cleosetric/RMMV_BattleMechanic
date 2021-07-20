@@ -7,7 +7,7 @@ a repository for plugins used to add new features in default battle mechanic.
 
 ![Range Mechanic](https://user-images.githubusercontent.com/87144416/126355025-0ca198e8-73c7-431a-98d5-34f5ddd7ecee.jpg "Battle Range Core Mechanic RMMV")
 
-## - [x] Range Core Mechanic
+## - [x] Range Core Mechanic ✔
 a plugins to add range mechanic to enemy and actor
 
 **IMPLEMENTED FEATURES LIST:**
