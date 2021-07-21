@@ -18,15 +18,12 @@
 * Introduction
 * ============================================================================
 *
-* This plugin allows battle with range adition
-* enemy and actor has position and distance
-* and battle based with range each battler and skill range
-* 
+* This plugin allows attack add bonus damage with actor TP Level
+*
 * ============================================================================
 * Notetags
 * ============================================================================
 *
-* You can use these notetags to adjust how enemies and actor are positioned
 *
 * 
 *
@@ -43,7 +40,7 @@ var CLEO_AttackTPBonus = CLEO_AttackTPBonus || {};
 //=============================================================================
 
   //Registers the Plugin for use 
-  $.Parameters = PluginManager.parameters("CLEO_BattleRangeCore");
+  $.Parameters = PluginManager.parameters("CLEO_AttackTPBonus");
   $.Param = $.Param || {};
 
   $.Param.param_name = Number($.Parameters.param_name ||20);
